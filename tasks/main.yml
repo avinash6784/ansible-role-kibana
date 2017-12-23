@@ -1,0 +1,39 @@
+---
+- name: Add Kibana GPG key.
+  rpm_key:
+    key: https://packages.elastic.co/GPG-KEY-elasticsearch
+    state: present
+
+- name: Add Kibana yum repository.
+  template:
+    src: kibana.repo.j2
+    dest: /etc/yum.repos.d/kibana.repo
+    mode: 0644
+
+- name: Install Kibana.
+  yum: 
+    name: kibana
+    state: installed
+
+- name: Configure Kibana.
+  template:
+    src: kibana.yml.j2
+    dest: /etc/kibana/kibana.yml
+    owner: root
+    group: kibana
+    mode: 0750
+  notify: restart kibana
+  
+- name: Start Kibana.
+  service: 
+    name: kibana 
+    state: restarted
+    enabled: yes
+  ignore_errors: true
+
+- name: Allow traffic through kibana TCP port in your firewall
+  firewalld:
+    port: "{{ kibana_server_port }}/tcp"
+    permanent: true
+    state: enabled
+  
